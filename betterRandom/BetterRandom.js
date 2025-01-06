@@ -171,6 +171,87 @@ class stlsLCGRandom extends stlsRandom {
         return this.#next(1) != 1;
     }
 }
+class stlsMersenneTwisterRandom extends stlsRandom {
+    static #N = 624;
+    static #M = 397;
+    static #MATRIX_A = 0x9908b0df;
+    static #UPPER_MASK = 0x80000000;
+    static #LOWER_MASK = 0x7fffffff;
+
+    constructor(seed) {
+        super();
+        this.mt = new Array(stlsMersenneTwisterRandom.#N);
+        this.index = stlsMersenneTwisterRandom.#N + 1;
+        this.setSeed(seed || Date.now());
+    }
+
+    setSeed(seed) {
+        this.mt[0] = (seed || Date.now()) >>> 0;
+        for (this.index = 1; this.index < stlsMersenneTwisterRandom.#N; this.index++) {
+            const s = this.mt[this.index - 1] ^ (this.mt[this.index - 1] >>> 30);
+            this.mt[this.index] = (((((s & 0xffff0000) >>> 16) * 1812433253) << 16) + (s & 0x0000ffff) * 1812433253) + this.index;
+            this.mt[this.index] >>>= 0;
+        }
+    }
+
+    #twist() {
+        for (let i = 0; i < stlsMersenneTwisterRandom.#N; i++) {
+            const x = (this.mt[i] & stlsMersenneTwisterRandom.#UPPER_MASK) + (this.mt[(i + 1) % stlsMersenneTwisterRandom.#N] & stlsMersenneTwisterRandom.#LOWER_MASK);
+            let xA = x >>> 1;
+            if (x % 2 !== 0) {
+                xA ^= stlsMersenneTwisterRandom.#MATRIX_A;
+            }
+            this.mt[i] = this.mt[(i + stlsMersenneTwisterRandom.#M) % stlsMersenneTwisterRandom.#N] ^ xA;
+        }
+        this.index = 0;
+    }
+
+    #next() {
+        if (this.index >= stlsMersenneTwisterRandom.#N) {
+            this.#twist();
+        }
+
+        let y = this.mt[this.index++];
+        y ^= (y >>> 11);
+        y ^= ((y << 7) & 0x9d2c5680);
+        y ^= ((y << 15) & 0xefc60000);
+        y ^= (y >>> 18);
+
+        return y >>> 0;
+    }
+    nextInt(min, max) {
+        if (max === undefined) {
+            if (min === undefined) {
+                return this.#next(); // 如果没有传入任何参数，返回一个随机整数
+            }
+            // 注意: 此处的min代表max
+            if (!Number.isInteger(min)) return "Error: max must be an integer!"; // 检查min是否为整数
+            if (min <= 0) return "Error: max must be greater than zero!"; // 检查min是否大于0
+            return this.#next() % min; // 返回 [0, max) 范围内的整数
+        }
+        if (!Number.isInteger(min) || !Number.isInteger(max)) return "Error: min and max must be integers!"; // 检查min和max是否为整数
+        if (min >= max) return "Error: min must be less than max!"; // 检查min是否小于max
+        return min + (this.#next() % (max - min)); // 返回 [min, max) 范围内的整数
+    }
+    
+    nextFloat(min, max) {
+        if (max === undefined) {
+            if (min === undefined) {
+                return this.#next() * (1.0 / 4294967296.0); // 默认返回 [0, 1) 范围内的浮点数
+            }
+            // 注意: 此处的min代表max
+            if (!(0 < min && min < Number.POSITIVE_INFINITY)) return "Error: max must be greater than zero and less than positive infinity!";
+            return this.#next() * (1.0 / 4294967296.0) * min; // 返回 [0, max) 范围内的浮点数
+        }
+        if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY)) return "Error: min must be less than max and both must be finite numbers!";
+        return min + (this.#next() * (1.0 / 4294967296.0) * (max - min)); // 返回 [min, max) 范围内的浮点数
+    } 
+
+    nextBoolean() {
+        return this.#next() % 2 === 0;
+    }
+}
+
 // --------------- 扩展部分 --------------
 const stlsBetterRandomID = "stlsBetterRandom";
 
@@ -179,43 +260,49 @@ class stlsBetterRandom {
         this.runtime = runtime;
         this.i18n = runtime.getFormatMessage({
             "zh-cn": {
-                "stls_BetterRandom.name": "更好的随机数",
-                "stls_BetterRandom.description": "支持自定义种子的伪随机数生成器!",
-                "stls_BetterRandom.create": "创建随机数生成器 名称[name]种子[seed]使用随机算法[algorithm]",
-                "stls_BetterRandom.createWithoutSeed": "创建随机数生成器 名称[name]使用随机算法[algorithm]",
-                "stls_BetterRandom.delete": "删除随机数生成器[name]",
-                "stls_BetterRandom.deleteAll": "删除所有随机数生成器",
-                "stls_BetterRandom.setSeed": "设置随机数生成器[name]的种子为[seed]",
-                "stls_BetterRandom.nextInt": "使用[name]生成随机整数",
-                "stls_BetterRandom.nextIntBound": "使用[name]生成0-[max]的随机整数",
-                "stls_BetterRandom.nextIntRange": "使用[name]生成[min]-[max]的随机整数",
-                "stls_BetterRandom.nextFloat": "使用[name]生成0-1的随机小数",
-                "stls_BetterRandom.nextFloatBound": "使用[name]生成0-[max]的随机小数",
-                "stls_BetterRandom.nextFloatRange": "使用[name]生成[min]-[max]的随机小数",
-                "stls_BetterRandom.nextBoolean": "使用[name]生成随机布尔值",
-                "stls_BetterRandom.algorithms.LCG": "线性同余随机",
-                "stls_BetterRandom.warnings.seed": "错误: 种子必须为整数！",
-                "stls_BetterRandom.warnings.invalidAlgorithm": "错误：非法算法",
-                "stls_BetterRandom.warnings.generatorNotFound": "错误：指定名称随机数生成器不存在！"
+                "stlsBetterRandom.name": "更好的随机数",
+                "stlsBetterRandom.description": "支持自定义种子的伪随机数生成器!",
+                "stlsBetterRandom.create": "创建随机数生成器 名称[name]种子[seed]使用随机算法[algorithm]",
+                "stlsBetterRandom.createWithoutSeed": "创建随机数生成器 名称[name]使用随机算法[algorithm]",
+                "stlsBetterRandom.delete": "删除随机数生成器[name]",
+                "stlsBetterRandom.deleteAll": "删除所有随机数生成器",
+                "stlsBetterRandom.setSeed": "设置随机数生成器[name]的种子为[seed]",
+                "stlsBetterRandom.nextInt": "使用[name]生成随机整数",
+                "stlsBetterRandom.nextIntBound": "使用[name]生成0-[max]的随机整数",
+                "stlsBetterRandom.nextIntRange": "使用[name]生成[min]-[max]的随机整数",
+                "stlsBetterRandom.nextFloat": "使用[name]生成0-1的随机小数",
+                "stlsBetterRandom.nextFloatBound": "使用[name]生成0-[max]的随机小数",
+                "stlsBetterRandom.nextFloatRange": "使用[name]生成[min]-[max]的随机小数",
+                "stlsBetterRandom.nextBoolean": "使用[name]生成随机布尔值",
+
+                "stlsBetterRandom.algorithms.LCG": "线性同余随机",
+                "stlsBetterRandom.algorithms.MersenneTwister": "梅森旋转随机",
+
+                "stlsBetterRandom.warnings.seed": "错误: 种子必须为整数！",
+                "stlsBetterRandom.warnings.invalidAlgorithm": "错误：非法算法",
+                "stlsBetterRandom.warnings.generatorNotFound": "错误：指定名称随机数生成器不存在！"
             },
             "en": {
-                "stls_BetterRandom.name": "Better Random Numbers",
-                "stls_BetterRandom.description": "Pseudo-random number generator with support for custom seeds!",
-                "stls_BetterRandom.create": "Create random number generator name[name] seed[seed] use algorithm[algorithm]",
-                "stls_BetterRandom.delete": "Delete random number generator[name]",
-                "stls_BetterRandom.deleteAll": "Delete all random number generators",
-                "stls_BetterRandom.setSeed": "Set the seed of random number generator[name] to[seed]",
-                "stls_BetterRandom.nextInt": "Generate a random integer using[name]",
-                "stls_BetterRandom.nextIntBound": "Generate a random integer from 0 to[max] using[name]",
-                "stls_BetterRandom.nextIntRange": "Generate a random integer from[min] to[max] using[name]",
-                "stls_BetterRandom.nextFloat": "Generate a random decimal from 0 to 1 using[name]",
-                "stls_BetterRandom.nextFloatBound": "Generate a random decimal from 0 to[max] using[name]",
-                "stls_BetterRandom.nextFloatRange": "Generate a random decimal from[min] to[max] using[name]",
-                "stls_BetterRandom.nextBoolean": "Generate a random boolean value using[name]",
-                "stls_BetterRandom.algorithms.LCG": "Linear Congruential Generator",
-                "stls_BetterRandom.warnings.seed": "Seed must be an integer!",
-                "stls_BetterRandom.warnings.invalidAlgorithm": "Error: Invalid algorithm",
-                "stls_BetterRandom.warnings.generatorNotFound": "Error: The specified name random number generator does not exist!"
+                "stlsBetterRandom.name": "Better Random Numbers",
+                "stlsBetterRandom.description": "Pseudo-random number generator with support for custom seeds!",
+                "stlsBetterRandom.create": "Create random number generator name[name] seed[seed] use algorithm[algorithm]",
+                "stlsBetterRandom.delete": "Delete random number generator[name]",
+                "stlsBetterRandom.deleteAll": "Delete all random number generators",
+                "stlsBetterRandom.setSeed": "Set the seed of random number generator[name] to[seed]",
+                "stlsBetterRandom.nextInt": "Generate a random integer using[name]",
+                "stlsBetterRandom.nextIntBound": "Generate a random integer from 0 to[max] using[name]",
+                "stlsBetterRandom.nextIntRange": "Generate a random integer from[min] to[max] using[name]",
+                "stlsBetterRandom.nextFloat": "Generate a random decimal from 0 to 1 using[name]",
+                "stlsBetterRandom.nextFloatBound": "Generate a random decimal from 0 to[max] using[name]",
+                "stlsBetterRandom.nextFloatRange": "Generate a random decimal from[min] to[max] using[name]",
+                "stlsBetterRandom.nextBoolean": "Generate a random boolean value using[name]",
+
+                "stlsBetterRandom.algorithms.LCG": "Linear Congruential Generator",
+                "stlsBetterRandom.algorithms.MersenneTwister": "Mersenne Twister",
+
+                "stlsBetterRandom.warnings.seed": "Seed must be an integer!",
+                "stlsBetterRandom.warnings.invalidAlgorithm": "Error: Invalid algorithm",
+                "stlsBetterRandom.warnings.generatorNotFound": "Error: The specified name random number generator does not exist!"
             }
         });
         this.randomGenerators = new Map();
@@ -223,7 +310,7 @@ class stlsBetterRandom {
     getInfo() {
         return {
             id: stlsBetterRandomID,
-            name: this.i18n("stls_BetterRandom.name"),
+            name: this.i18n("stlsBetterRandom.name"),
             blockIconURI: stlsBetterRandomIcon,
             menuIconURI: stlsBetterRandomIcon,
             color1: "#8E44AD",
@@ -232,7 +319,7 @@ class stlsBetterRandom {
                 {
                     opcode: "create",
                     blockType: "command",
-                    text: this.i18n("stls_BetterRandom.create"),
+                    text: this.i18n("stlsBetterRandom.create"),
                     arguments: {
                         name: {
                             type: "string",
@@ -251,7 +338,7 @@ class stlsBetterRandom {
                 {
                     opcode: "createWithoutSeed",
                     blockType: "command",
-                    text: this.i18n("stls_BetterRandom.createWithoutSeed"),
+                    text: this.i18n("stlsBetterRandom.createWithoutSeed"),
                     arguments: {
                         name: {
                             type: "string",
@@ -266,7 +353,7 @@ class stlsBetterRandom {
                 {
                     opcode: "delete",
                     blockType: "command",
-                    text: this.i18n("stls_BetterRandom.delete"),
+                    text: this.i18n("stlsBetterRandom.delete"),
                     arguments: {
                         name: {
                             type: "string",
@@ -277,12 +364,12 @@ class stlsBetterRandom {
                 {
                     opcode: "deleteAll",
                     blockType: "command",
-                    text: this.i18n("stls_BetterRandom.deleteAll")
+                    text: this.i18n("stlsBetterRandom.deleteAll")
                 },
                 {
                     opcode: "setSeed",
                     blockType: "command",
-                    text: this.i18n("stls_BetterRandom.setSeed"),
+                    text: this.i18n("stlsBetterRandom.setSeed"),
                     arguments: {
                         name: {
                             type: "string",
@@ -297,7 +384,7 @@ class stlsBetterRandom {
                 {
                     opcode: "nextInt",
                     blockType: "reporter",
-                    text: this.i18n("stls_BetterRandom.nextInt"),
+                    text: this.i18n("stlsBetterRandom.nextInt"),
                     arguments: {
                         name: {
                             type: "string",
@@ -308,7 +395,7 @@ class stlsBetterRandom {
                 {
                     opcode: "nextIntBound",
                     blockType: "reporter",
-                    text: this.i18n("stls_BetterRandom.nextIntBound"),
+                    text: this.i18n("stlsBetterRandom.nextIntBound"),
                     arguments: {
                         name: {
                             type: "string",
@@ -323,7 +410,7 @@ class stlsBetterRandom {
                 {
                     opcode: "nextIntRange",
                     blockType: "reporter",
-                    text: this.i18n("stls_BetterRandom.nextIntRange"),
+                    text: this.i18n("stlsBetterRandom.nextIntRange"),
                     arguments: {
                         name: {
                             type: "string",
@@ -343,7 +430,7 @@ class stlsBetterRandom {
                 {
                     opcode: "nextFloat",
                     blockType: "reporter",
-                    text: this.i18n("stls_BetterRandom.nextFloat"),
+                    text: this.i18n("stlsBetterRandom.nextFloat"),
                     arguments: {
                         name: {
                             type: "string",
@@ -354,7 +441,7 @@ class stlsBetterRandom {
                 {
                     opcode: "nextFloatBound",
                     blockType: "reporter",
-                    text: this.i18n("stls_BetterRandom.nextFloatBound"),
+                    text: this.i18n("stlsBetterRandom.nextFloatBound"),
                     arguments: {
                         name: {
                             type: "string",
@@ -369,7 +456,7 @@ class stlsBetterRandom {
                 {
                     opcode: "nextFloatRange",
                     blockType: "reporter",
-                    text: this.i18n("stls_BetterRandom.nextFloatRange"),
+                    text: this.i18n("stlsBetterRandom.nextFloatRange"),
                     arguments: {
                         name: {
                             type: "string",
@@ -388,7 +475,7 @@ class stlsBetterRandom {
                 {
                     opcode: "nextBoolean",
                     blockType: "Boolean",
-                    text: this.i18n("stls_BetterRandom.nextBoolean"),
+                    text: this.i18n("stlsBetterRandom.nextBoolean"),
                     arguments: {
                         name: {
                             type: "string",
@@ -400,8 +487,12 @@ class stlsBetterRandom {
             menus: {
                 algorithms: [
                     {
-                        text: this.i18n("stls_BetterRandom.algorithms.LCG"),
+                        text: this.i18n("stlsBetterRandom.algorithms.LCG"),
                         value: "LCG"
+                    },
+                    {
+                        text: this.i18n("stlsBetterRandom.algorithms.MersenneTwister"),
+                        value: "MersenneTwister"
                     }
                 ]
             }
@@ -410,7 +501,7 @@ class stlsBetterRandom {
     create(args) {
         let seed = args.seed;
         if (!Number.isInteger(seed)) {
-            console.warn(this.i18n("stls_BetterRandom.warnings.seedMustBeInteger"));
+            console.warn(this.i18n("stlsBetterRandom.warnings.seedMustBeInteger"));
             return;
         }
         let generator;
@@ -418,8 +509,11 @@ class stlsBetterRandom {
             case "LCG":
                 generator = new stlsLCGRandom(seed);
                 break;
+            case "MersenneTwister":
+                generator = new stlsMersenneTwisterRandom(seed);
+                break;
             default:
-                console.warn(this.i18n("stls_BetterRandom.warnings.invalidAlgorithm"));
+                console.warn(this.i18n("stlsBetterRandom.warnings.invalidAlgorithm"));
                 return;
         }
         this.randomGenerators.set(args.name, generator);
@@ -430,8 +524,11 @@ class stlsBetterRandom {
             case "LCG":
                 generator = new stlsLCGRandom();
                 break;
+            case "MersenneTwister":
+                generator = new stlsMersenneTwisterRandom();
+                break;
             default:
-                console.warn(this.i18n("stls_BetterRandom.warnings.invalidAlgorithm"));
+                console.warn(this.i18n("stlsBetterRandom.warnings.invalidAlgorithm"));
                 return;
         }
         this.randomGenerators.set(args.name, generator);
@@ -447,7 +544,7 @@ class stlsBetterRandom {
         if (generator) {
             generator.setSeed(args.seed);
         } else {
-            console.warn(this.i18n("stls_BetterRandom.warnings.generatorNotFound"));
+            console.warn(this.i18n("stlsBetterRandom.warnings.generatorNotFound"));
         }
     }
     nextInt(args) {
@@ -455,7 +552,7 @@ class stlsBetterRandom {
         if (generator) {
             return generator.nextInt();
         } else {
-            return this.i18n("stls_BetterRandom.warnings.generatorNotFound");
+            return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
     }
     nextIntBound(args) {
@@ -463,7 +560,7 @@ class stlsBetterRandom {
         if (generator) {
             return generator.nextInt(args.max);
         } else {
-            return this.i18n("stls_BetterRandom.warnings.generatorNotFound");
+            return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
     }
     nextIntRange(args) {
@@ -471,7 +568,7 @@ class stlsBetterRandom {
         if (generator) {
             return generator.nextInt(args.min, args.max);
         } else {
-            return this.i18n("stls_BetterRandom.warnings.generatorNotFound");
+            return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
     }
     nextFloat(args) {
@@ -479,7 +576,7 @@ class stlsBetterRandom {
         if (generator) {
             return generator.nextFloat();
         } else {
-            return this.i18n("stls_BetterRandom.warnings.generatorNotFound");
+            return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
     }
     nextFloatBound(args) {
@@ -487,7 +584,7 @@ class stlsBetterRandom {
         if (generator) {
             return generator.nextFloat(args.max);
         } else {
-            return this.i18n("stls_BetterRandom.warnings.generatorNotFound");
+            return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
     }
     nextFloatRange(args) {
@@ -495,7 +592,7 @@ class stlsBetterRandom {
         if (generator) {
             return generator.nextFloat(args.min, args.max);
         } else {
-            return this.i18n("stls_BetterRandom.warnings.generatorNotFound");
+            return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
     }
     nextBoolean(args) {
@@ -503,15 +600,15 @@ class stlsBetterRandom {
         if (generator) {
             return generator.nextBoolean();
         } else {
-            return this.i18n("stls_BetterRandom.warnings.generatorNotFound");
+            return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
     }
 }
 window.tempExt = {
     Extension: stlsBetterRandom,
     info: {
-        name: "stls_BetterRandom.name",
-        description: "stls_BetterRandom.description",
+        name: "stlsBetterRandom.name",
+        description: "stlsBetterRandom.description",
         extensionId: stlsBetterRandomID,
         iconURL: stlsBetterRandomCover,
         insetIconURL: stlsBetterRandomIcon,
@@ -521,12 +618,12 @@ window.tempExt = {
     },
     l10n: {
         "zh-cn": {
-            "stls_BetterRandom.name": "更好的随机数",
-            "stls_BetterRandom.description": "使用种子的随机数生成器"
+            "stlsBetterRandom.name": "更好的随机数",
+            "stlsBetterRandom.description": "使用种子的随机数生成器"
         },
         "en": {
-            "stls_BetterRandom.name": "Better Random Numbers",
-            "stls_BetterRandom.description": "Seed-based random number generator"
+            "stlsBetterRandom.name": "Better Random Numbers",
+            "stlsBetterRandom.description": "Seed-based random number generator"
         }
     }
 }
