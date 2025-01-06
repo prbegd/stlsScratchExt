@@ -172,7 +172,7 @@ class stlsLCGRandom extends stlsRandom {
     }
 }
 // --------------- 扩展部分 --------------
-const stlsBetterRandomID = "stls_BetterRandom";
+const stlsBetterRandomID = "stlsBetterRandom";
 
 class stlsBetterRandom {
     constructor(runtime) {
