@@ -1,4 +1,5 @@
-// ----- 库部分 -----
+//↙ 点这里折叠 ----- 库部分 ----- 
+//#region long.js
 /**
  * @license
  * Copyright 2009 The Closure Library Authors
@@ -1466,3 +1467,4 @@ Long.fromBytesBE = function fromBytesBE(bytes, unsigned) {
 };
 
 export default Long;
+//#endregion
