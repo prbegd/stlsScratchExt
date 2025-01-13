@@ -17,15 +17,6 @@ function nextDown(num) {
             return num - Number.EPSILON;
     }
 }
-// 因为Long是64位整数，为了转换为Number，需要提取高53位。
-function longToNumber(num) {
-    if (!Long.isLong(num)) throw new Error("longToNumber:传入的不是Long类型");
-    if (!num.unsigned) throw new Error("longToNumber:传入的Long类型必须是无符号的");
-    // lte: less than or equal
-    if (num.lte(Number.MAX_SAFE_INTEGER)) return num.toNumber(); // 如果是安全的整数，直接返回
-    // shru: shift right unsigned
-    return num.shru(11).toNumber();
-}
 //#endregion
 // -------------------
 /**
@@ -71,22 +62,15 @@ class stlsRandom {
     }
 }
 
-// 算法根据java的Random类实现
 class stlsLCGRandom extends stlsRandom {
-    // static #seedUniquifier = 8682522807148012n;
     static #seedUniquifier = Long.fromString("8682522807148012");
-
     static #multiplier = Long.fromString("25214903917");
     static #addend = Long.fromNumber(11);
     static #mask = Long.fromNumber(1).shl(48).sub(1);
-
     static #FLOAT_UNIT = 1 / Long.fromNumber(1).shl(53).toNumber();
 
     static #getSeedUniquifier() {
-        // 引用
-        // L'Ecuyer, "Tables of Linear Congruential Generators of
-        // Different Sizes and Good Lattice Structure", 1999
-        stlsLCGRandom.#seedUniquifier = stlsLCGRandom.#seedUniquifier.mul(Long.fromString("1181783497276652981"))
+        stlsLCGRandom.#seedUniquifier = stlsLCGRandom.#seedUniquifier.mul(Long.fromString("1181783497276652981"));
         return stlsLCGRandom.#seedUniquifier;
     }
 
@@ -107,101 +91,76 @@ class stlsLCGRandom extends stlsRandom {
     }
 
     #next(bits) {
-        const oldSeed = Long.fromValue(this.seed)
-        let nextSeed = oldSeed.mul(stlsLCGRandom.#multiplier).add(stlsLCGRandom.#addend).and(stlsLCGRandom.#mask);
-        this.seed = nextSeed;
-        console.debug(stlsLCGRandom.#multiplier.toString());
-        console.debug(stlsLCGRandom.#addend.toString());
-        console.debug(stlsLCGRandom.#mask.toString());
-        return Long.fromValue(nextSeed).shru(48 - bits).toNumber();
+        // 复制seed，防止修改原始的seed值。
+        const oldSeed = Long.fromValue(this.seed);
+        this.seed = oldSeed.mul(stlsLCGRandom.#multiplier).add(stlsLCGRandom.#addend).and(stlsLCGRandom.#mask);
+        return Long.fromValue(this.seed).shru(48 - bits).toNumber();
     }
-    // ----- 你要用的 -----
+
     nextInt(min, max) {
         if (max === undefined) {
-            if (min === undefined) {
-                return this.#nextInt0();
-            }
-            return this.#nextInt1(min);
+            return min === undefined ? this.#nextInt0() : this.#nextInt1(min);
         }
         return this.#nextInt2(min, max);
     }
 
     #nextInt0() {
-        return this.#next(32);
+        return (this.#next(32) << 21) + this.#next(21);
     }
+
     #nextInt1(max) {
-        if (!Number.isInteger(max)) return "Error: max must be an integer!"
-        if (max <= 0) return "Error: max must be greater than zero!"
+        if (!Number.isInteger(max) || max <= 0) return `Error: max must be an integer greater than zero!`;
 
-        let r = this.#next(31);
-        let m = max - 1;
-        if ((max & m) === 0)
-            r = Long.fromNumber(r).mul(max).shr(31).toNumber();
-        else {
-            for (let u = r;
-                u - (r = u % max) + m < 0;
-                u = this.#next(31))
-                ;
-        }
-        return r;
+        const r = this.#nextInt0();
+        return (max & (max - 1)) === 0 ? r & (max - 1) : this.#nextIntBounded(r, max);
     }
+
     #nextInt2(min, max) {
-        if (!Number.isInteger(min) || !Number.isInteger(max)) return "Error: min and max must be integers!";
-        if (min >= max) return "Error: min must be less than max!";
+        if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
+            return `Error: min and max must be integers with min < max!`;
 
-        let r = this.#nextInt0();
         const n = max - min;
-        const m = n - 1;
-        if ((n & m) === 0) {
-            r = (r & m) + min;
-        } else {
-            let u;
-            do {
-                r = this.#nextInt0();
-                u = r >>> 1;
-                r = u % n;
-            } while (u + m - r < 0);
-            r += min;
-        }
+        const r = this.#nextInt0();
+        return (n & (n - 1)) === 0 ? (r & (n - 1)) + min : this.#nextIntBounded(r, n) + min;
+    }
+
+    #nextIntBounded(r, bound) {
+        let u = r >>> 1;
+        while (u + bound - (r = u % bound) < 0)
+            u = this.#nextInt0() >>> 1;
         return r;
     }
+
     nextFloat(min, max) {
         if (max === undefined) {
-            if (min === undefined) {
-                return this.#nextFloat0();
-            }
-            return this.#nextFloat1(min);
+            return min === undefined ? this.#nextFloat0() : this.#nextFloat1(min);
         }
         return this.#nextFloat2(min, max);
     }
+
     #nextFloat0() {
-        return Long.fromNumber(this.#next(26)).shl(27).add(this.#next(27)).toNumber() * stlsLCGRandom.#FLOAT_UNIT;
+        return (Long.fromNumber(this.#next(26)).shl(27).add(this.#next(27)).toNumber() * stlsLCGRandom.#FLOAT_UNIT);
     }
+
     #nextFloat1(max) {
-        if (!(0 < max && max < Number.POSITIVE_INFINITY)) return "Error: max must be greater than zero and less than positive infinity!";
+        if (!(0 < max && max < Number.POSITIVE_INFINITY))
+            return `Error: max must be greater than zero and less than positive infinity!`;
 
-        let r = this.#nextFloat0();
-        r *= max;
-        if (r >= max)
-            r = nextDown(max);
-        return r;
+        let r = this.#nextFloat0() * max;
+        return r >= max ? nextDown(max) : r;
     }
+
     #nextFloat2(min, max) {
-        if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY)) return "Error: min must be less than max and both must be finite numbers!";
+        if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY))
+            return `Error: min must be less than max and both must be finite numbers!`;
 
-        let r = this.#nextFloat0();
-        if (max - min < Number.POSITIVE_INFINITY) {
-            r *= (max - min) + min;
-        } else {
-            let halfOrigin = 0.5 * min;
-            r = (r * (0.5 * max - halfOrigin) + halfOrigin) * 2.0;
-        }
-        if (r >= max)
-            r = nextDown(max);
-        return r;
+        const range = max - min;
+        let r = this.#nextFloat0() * range + min;
+        return r >= max ? nextDown(max) : r;
     }
+
     nextBoolean() {
-        return this.#next(1) != 1;
+        return this.#next(1) !== 1;
     }
 }
 class stlsMersenneTwisterRandom extends stlsRandom {
@@ -285,17 +244,6 @@ class stlsMersenneTwisterRandom extends stlsRandom {
         return this.#next() % 2 === 0;
     }
 }
-/* 函数已在别处定义，此处仅作参考
-// 因为Long是64位整数，为了转换为Number，需要提取高53位。
-function longToNumber(num) {
-    if (!Long.isLong(num)) throw new Error("longToNumber:传入的不是Long类型");
-    if (!num.unsigned) throw new Error("longToNumber:传入的Long类型必须是无符号的");
-    // lte: less than or equal
-    if (num.lte(Number.MAX_SAFE_INTEGER)) return num.toNumber(); // 如果是安全的整数，直接返回
-    // shru: shift right unsigned
-    return num.shru(11).toNumber();
-}
-*/
 class stlsXorshiftRandom extends stlsRandom {
     constructor(seed) {
         super();
@@ -305,15 +253,15 @@ class stlsXorshiftRandom extends stlsRandom {
     // 设置种子的方法
     setSeed(seed) {
         if (!Number.isInteger(seed)) return;
-        this.seed = Long.fromNumber(seed);
+        this.seed = seed;
     }
 
     // Xorshift 算法
     #next() {
-        this.seed = this.seed.xor(this.seed.shr(13));
-        this.seed = this.seed.xor(this.seed.shru(17));
-        this.seed = this.seed.xor(this.seed.shl(5));
-        return longToNumber(this.seed.toUnsigned()); // 返回无符号整数
+        this.seed ^= (this.seed << 13);
+        this.seed ^= (this.seed >>> 17);
+        this.seed ^= (this.seed << 5);
+        return this.seed >>> 0; // 返回无符号整数
     }
 
     nextInt(min, max) {
@@ -344,7 +292,7 @@ class stlsXorshiftRandom extends stlsRandom {
 
     nextFloat(min = 0, max = 1) {
         // 生成一个范围在 [0, 1) 之间的随机浮点数
-        const randomFloat = this.#next() / Number.MAX_SAFE_INTEGER;
+        const randomFloat = this.#next() / 0xFFFFFFFF;
         // 根据 min 和 max 调整范围
         return min + randomFloat * (max - min);
     }
