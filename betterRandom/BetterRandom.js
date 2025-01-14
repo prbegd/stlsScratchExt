@@ -17,6 +17,12 @@ function nextDown(num) {
             return num - Number.EPSILON;
     }
 }
+class stlsInvaildSeedException extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "stlsInvaildSeedException";
+    }
+}
 //#endregion
 // -------------------
 /**
@@ -25,7 +31,7 @@ function nextDown(num) {
 class stlsRandom {
     constructor(seed) {
         if (this.constructor === stlsRandom) {
-            throw new Error("Can't instantiate abstract class.");
+            throw new Error("BetterRandom/Internal error:Can't instantiate abstract class.");
         }
     }
     setSeed(seed) { }
@@ -39,7 +45,7 @@ class stlsRandom {
     参数只能是整数（需要处理传入undefined和字符串等类型的情况）
     */
     nextInt(min, max) {
-        return "Error:Random number algorithm not implemented correctly!"
+        return "BetterRandom/Internal error:Random number algorithm not implemented correctly!"
     }
     /* 
     参数说明:
@@ -51,14 +57,14 @@ class stlsRandom {
     参数只能是整数或小数（需要处理传入undefined和字符串等类型的情况）
     */
     nextFloat(min, max) {
-        return "Error:Random number algorithm not implemented correctly!"
+        return "BetterRandom/Internal error:Random number algorithm not implemented correctly!"
     }
     /* 
     要求：
     初始错误返回字符串
     */
     nextBoolean() {
-        return "Error:Random number algorithm not implemented correctly!"
+        return "BetterRandom/Internal error:Random number algorithm not implemented correctly!"
     }
 }
 
@@ -82,11 +88,11 @@ class stlsLCGRandom extends stlsRandom {
         super();
         if (seed === undefined)
             seed = stlsLCGRandom.#getSeedUniquifier().xor(performance.now() * 1e6);
-        this.seed = stlsLCGRandom.#initialScramble(seed);
+        this.setSeed(seed)
     }
 
     setSeed(seed) {
-        if (!Number.isInteger(seed)) return;
+        if (!Number.isInteger(seed)) throw new stlsInvaildSeedException();
         this.seed = stlsLCGRandom.#initialScramble(seed);
     }
 
@@ -109,7 +115,8 @@ class stlsLCGRandom extends stlsRandom {
     }
 
     #nextInt1(max) {
-        if (!Number.isInteger(max) || max <= 0) return `Error: max must be an integer greater than zero!`;
+        if (!Number.isInteger(max) || max <= 0)
+            return `stlsBetterRandom.warnings.intBound`;
 
         const r = this.#nextInt0();
         return (max & (max - 1)) === 0 ? r & (max - 1) : this.#nextIntBounded(r, max);
@@ -117,7 +124,7 @@ class stlsLCGRandom extends stlsRandom {
 
     #nextInt2(min, max) {
         if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
-            return `Error: min and max must be integers with min < max!`;
+            return `stlsBetterRandom.warnings.intRange`;
 
         const n = max - min;
         const r = this.#nextInt0();
@@ -144,7 +151,7 @@ class stlsLCGRandom extends stlsRandom {
 
     #nextFloat1(max) {
         if (!(0 < max && max < Number.POSITIVE_INFINITY))
-            return `Error: max must be greater than zero and less than positive infinity!`;
+            return `stlsBetterRandom.warnings.floatBound`;
 
         let r = this.#nextFloat0() * max;
         return r >= max ? nextDown(max) : r;
@@ -152,7 +159,7 @@ class stlsLCGRandom extends stlsRandom {
 
     #nextFloat2(min, max) {
         if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY))
-            return `Error: min must be less than max and both must be finite numbers!`;
+            return `stlsBetterRandom.warnings.floatRange`;
 
         const range = max - min;
         let r = this.#nextFloat0() * range + min;
@@ -178,7 +185,7 @@ class stlsMersenneTwisterRandom extends stlsRandom {
     }
 
     setSeed(seed) {
-        if (!Number.isInteger(seed)) return;
+        if (!Number.isInteger(seed)) throw new stlsInvaildSeedException();
         this.mt[0] = (seed || Date.now()) >>> 0;
         for (this.index = 1; this.index < stlsMersenneTwisterRandom.#N; this.index++) {
             const s = this.mt[this.index - 1] ^ (this.mt[this.index - 1] >>> 30);
@@ -218,12 +225,12 @@ class stlsMersenneTwisterRandom extends stlsRandom {
                 return this.#next(); // 如果没有传入任何参数，返回一个随机整数
             }
             // 注意: 此处的min代表max
-            if (!Number.isInteger(min)) return "Error: max must be an integer!"; // 检查min是否为整数
-            if (min <= 0) return "Error: max must be greater than zero!"; // 检查min是否大于0
+            if (!Number.isInteger(min) || min <= 0)
+                return `stlsBetterRandom.warnings.intBound`;
             return this.#next() % min; // 返回 [0, max) 范围内的整数
         }
-        if (!Number.isInteger(min) || !Number.isInteger(max)) return "Error: min and max must be integers!"; // 检查min和max是否为整数
-        if (min >= max) return "Error: min must be less than max!"; // 检查min是否小于max
+        if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
+            return `stlsBetterRandom.warnings.intRange`;
         return min + (this.#next() % (max - min)); // 返回 [min, max) 范围内的整数
     }
 
@@ -233,10 +240,12 @@ class stlsMersenneTwisterRandom extends stlsRandom {
                 return this.#next() * (1.0 / 4294967296.0); // 默认返回 [0, 1) 范围内的浮点数
             }
             // 注意: 此处的min代表max
-            if (!(0 < min && min < Number.POSITIVE_INFINITY)) return "Error: max must be greater than zero and less than positive infinity!";
+            if (!(0 < min && min < Number.POSITIVE_INFINITY))
+                return `stlsBetterRandom.warnings.floatBound`;
             return this.#next() * (1.0 / 4294967296.0) * min; // 返回 [0, max) 范围内的浮点数
         }
-        if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY)) return "Error: min must be less than max and both must be finite numbers!";
+        if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY))
+            return `stlsBetterRandom.warnings.floatRange`;
         return min + (this.#next() * (1.0 / 4294967296.0) * (max - min)); // 返回 [min, max) 范围内的浮点数
     }
 
@@ -252,7 +261,7 @@ class stlsXorshiftRandom extends stlsRandom {
     }
     // 设置种子的方法
     setSeed(seed) {
-        if (!Number.isInteger(seed)) return;
+        if (!Number.isInteger(seed)) throw new stlsInvaildSeedException();
         this.seed = seed;
     }
 
@@ -268,32 +277,34 @@ class stlsXorshiftRandom extends stlsRandom {
         if (min === undefined && max === undefined) {
             return this.#next(); // 如果没有参数，返回随机整数
         }
-
-        if (!Number.isInteger(min) || (max !== undefined && !Number.isInteger(max))) {
-            return "Error: min and max must be integers!";
-        }
-
-        if (max !== undefined && min >= max) {
-            return "Error: min must be less than max!"; // 检查min是否小于max
-        }
-
-        if (max === undefined && min <= 0) {
-            return "Error: max must be greater than zero!"; // 检查min是否大于0
-        }
-
         // 如果max未传入, 则返回[0, min)的随机整数
         if (max === undefined) {
+            if (!Number.isInteger(min) || min <= 0)
+                return `stlsBetterRandom.warnings.intBound`;
             return this.#next() % min; // 处理负值情况
         }
         // 返回[min, max) 的随机整数，确保返回值在正确范围内
+        if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
+            return `stlsBetterRandom.warnings.intRange`;
         const range = max - min;
         return min + this.#next() % range;
     }
 
-    nextFloat(min = 0, max = 1) {
+    nextFloat(min, max) {
         // 生成一个范围在 [0, 1) 之间的随机浮点数
         const randomFloat = this.#next() / 0xFFFFFFFF;
+        if (max === undefined) {
+            if (min === undefined) { // max和min都缺省，返回[0, 1)的随机浮点数
+                return randomFloat;
+            }
+            // 只传入min，将min当做最大值，返回[0, min)的随机浮点数
+            if (!(0 < min && min < Number.POSITIVE_INFINITY))
+                return `stlsBetterRandom.warnings.floatBound`;
+            return min * randomFloat;
+        }
         // 根据 min 和 max 调整范围
+        if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY))
+            return `stlsBetterRandom.warnings.floatRange`;
         return min + randomFloat * (max - min);
     }
 
@@ -329,12 +340,18 @@ class stlsBetterRandom {
                 "stlsBetterRandom.algorithms.MersenneTwister": "梅森旋转随机",
                 "stlsBetterRandom.algorithms.Xorshift": "Xorshift随机",
 
-                "stlsBetterRandom.warnings.seed": "错误: 种子必须为整数！",
-                "stlsBetterRandom.warnings.invalidAlgorithm": "错误：非法算法",
-                "stlsBetterRandom.warnings.generatorNotFound": "错误：指定名称随机数生成器不存在！"
+                "stlsBetterRandom.console.seed": "更好的随机数/错误：种子必须为整数！",
+                "stlsBetterRandom.console.invalidAlgorithm": "更好的随机数/错误：非法算法",
+                "stlsBetterRandom.console.seedMustBeInteger": "更好的随机数/错误：种子必须为整数！当前种子：",
+
+                "stlsBetterRandom.warnings.generatorNotFound": "错误：指定名称随机数生成器不存在!",
+                "stlsBetterRandom.warnings.intBound": "错误：max必须为大于零的整数！",
+                "stlsBetterRandom.warnings.intRange": "错误：min和max必须为整数，且min < max！",
+                "stlsBetterRandom.warnings.floatBound": "错误：max必须大于零且小于正无穷大！",
+                "stlsBetterRandom.warnings.floatRange": "错误：min必须小于max且两者都必须是有限数！"
             },
             "en": {
-                "stlsBetterRandom.name": "Better Random Numbers",
+                "stlsBetterRandom.name": "Better Random",
                 "stlsBetterRandom.description": "Pseudo-random number generator with support for custom seeds!",
                 "stlsBetterRandom.create": "Create random number generator name[name] seed[seed] use algorithm[algorithm]",
                 "stlsBetterRandom.delete": "Delete random number generator[name]",
@@ -353,9 +370,15 @@ class stlsBetterRandom {
                 "stlsBetterRandom.algorithms.Xorshift": "Xorshift",
 
 
-                "stlsBetterRandom.warnings.seed": "Seed must be an integer!",
-                "stlsBetterRandom.warnings.invalidAlgorithm": "Error: Invalid algorithm",
-                "stlsBetterRandom.warnings.generatorNotFound": "Error: The specified name random number generator does not exist!"
+                "stlsBetterRandom.console.seed": "Better Random/Error: Seed must be an integer!",
+                "stlsBetterRandom.console.invalidAlgorithm": "Better Random/Error: Invalid algorithm",
+                "stlsBetterRandom.console.seedMustBeInteger": "Better Random/Error: Seed must be an integer! Current seed: ",
+
+                "stlsBetterRandom.warnings.generatorNotFound": "Error: The specified name random number generator does not exist!",
+                "stlsBetterRandom.warnings.intBound": "Error: max must be an integer greater than zero!",
+                "stlsBetterRandom.warnings.intRange": "Error: min and max must be integers with min < max!",
+                "stlsBetterRandom.warnings.floatBound": "Error: max must be greater than zero and less than positive infinity!",
+                "stlsBetterRandom.warnings.floatRange": "Error: min must be less than max and both must be finite numbers!"
             }
         });
         /**
@@ -558,28 +581,37 @@ class stlsBetterRandom {
             }
         };
     }
+    _returnValue(value) {
+        if (typeof value === "string") {
+            return this.i18n(value);
+        } else {
+            return value;
+        }
+    }
     create(args) {
         let seed = args.seed;
-        if (!Number.isInteger(seed)) {
-            console.warn(this.i18n("stlsBetterRandom.warnings.seedMustBeInteger"));
-            return;
+        try {
+            let generator;
+            switch (args.algorithm) {
+                case "LCG":
+                    generator = new stlsLCGRandom(seed);
+                    break;
+                case "MersenneTwister":
+                    generator = new stlsMersenneTwisterRandom(seed);
+                    break;
+                case "Xorshift":
+                    generator = new stlsXorshiftRandom(seed);
+                    break;
+                default:
+                    console.warn(this.i18n("stlsBetterRandom.console.invalidAlgorithm") + "(" + args.algorithm + ")");
+                    return;
+            }
+            this.randomGenerators.set(args.name, generator);
+        } catch (e) {
+            if (e.name !== "stlsInvaildSeedException")
+                throw e;
+            console.warn(this.i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
         }
-        let generator;
-        switch (args.algorithm) {
-            case "LCG":
-                generator = new stlsLCGRandom(seed);
-                break;
-            case "MersenneTwister":
-                generator = new stlsMersenneTwisterRandom(seed);
-                break;
-            case "Xorshift":
-                generator = new stlsXorshiftRandom(seed);
-                break;
-            default:
-                console.warn(this.i18n("stlsBetterRandom.warnings.invalidAlgorithm"));
-                return;
-        }
-        this.randomGenerators.set(args.name, generator);
     }
     createWithoutSeed(args) {
         let generator;
@@ -594,7 +626,7 @@ class stlsBetterRandom {
                 generator = new stlsXorshiftRandom();
                 break;
             default:
-                console.warn(this.i18n("stlsBetterRandom.warnings.invalidAlgorithm"));
+                console.warn(this.i18n("stlsBetterRandom.console.invalidAlgorithm") + "(" + args.algorithm + ")");
                 return;
         }
         this.randomGenerators.set(args.name, generator);
@@ -606,17 +638,24 @@ class stlsBetterRandom {
         this.randomGenerators = new Map();
     }
     setSeed(args) {
-        let generator = this.randomGenerators.get(args.name);
-        if (generator) {
-            generator.setSeed(args.seed);
-        } else {
-            console.warn(this.i18n("stlsBetterRandom.warnings.generatorNotFound"));
+        let seed = args.seed;
+        try {
+            let generator = this.randomGenerators.get(args.name);
+            if (generator) {
+                generator.setSeed(seed);
+            } else {
+                console.warn(this.i18n("stlsBetterRandom.warnings.generatorNotFound"));
+            }
+        } catch (e) {
+            if (e.name !== "stlsInvaildSeedException")
+                throw e;
+            console.warn(this.i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
         }
     }
     nextInt(args) {
         let generator = this.randomGenerators.get(args.name);
         if (generator) {
-            return generator.nextInt();
+            return this._returnValue(generator.nextInt());
         } else {
             return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
@@ -624,7 +663,7 @@ class stlsBetterRandom {
     nextIntBound(args) {
         let generator = this.randomGenerators.get(args.name);
         if (generator) {
-            return generator.nextInt(args.max);
+            return this._returnValue(generator.nextInt(args.max));
         } else {
             return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
@@ -632,7 +671,7 @@ class stlsBetterRandom {
     nextIntRange(args) {
         let generator = this.randomGenerators.get(args.name);
         if (generator) {
-            return generator.nextInt(args.min, args.max);
+            return this._returnValue(generator.nextInt(args.min, args.max));
         } else {
             return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
@@ -640,7 +679,7 @@ class stlsBetterRandom {
     nextFloat(args) {
         let generator = this.randomGenerators.get(args.name);
         if (generator) {
-            return generator.nextFloat();
+            return this._returnValue(generator.nextFloat());
         } else {
             return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
@@ -648,7 +687,7 @@ class stlsBetterRandom {
     nextFloatBound(args) {
         let generator = this.randomGenerators.get(args.name);
         if (generator) {
-            return generator.nextFloat(args.max);
+            return this._returnValue(generator.nextFloat(args.max));
         } else {
             return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
@@ -656,7 +695,7 @@ class stlsBetterRandom {
     nextFloatRange(args) {
         let generator = this.randomGenerators.get(args.name);
         if (generator) {
-            return generator.nextFloat(args.min, args.max);
+            return this._returnValue(generator.nextFloat(args.min, args.max));
         } else {
             return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
@@ -664,7 +703,7 @@ class stlsBetterRandom {
     nextBoolean(args) {
         let generator = this.randomGenerators.get(args.name);
         if (generator) {
-            return generator.nextBoolean();
+            return this._returnValue(generator.nextBoolean());
         } else {
             return this.i18n("stlsBetterRandom.warnings.generatorNotFound");
         }
