@@ -5,6 +5,7 @@
 详见[Github](https://github.com/prbegd/stlsScratchExt)
 
 # 注意事项
+本扩展的所有生成器都是32位的，因为JavaScript的Number类型没办法表示64位数字。但是如果有更好表示64位数字的办法可以告诉我
 ## 梅森旋转
 梅森旋转生成的无范围随机整数不支持负数，需要请自行转换(-2147483647)。
 ## Xorshift
