@@ -111,30 +111,44 @@ class stlsLCGRandom extends stlsRandom {
     }
 
     #nextInt0() {
-        return (this.#next(32) << 21) + this.#next(21);
+        return this.#next(32);
     }
 
     #nextInt1(max) {
         if (!Number.isInteger(max) || max <= 0)
             return `stlsBetterRandom.warnings.intBound`;
 
-        const r = this.#nextInt0();
-        return (max & (max - 1)) === 0 ? r & (max - 1) : this.#nextIntBounded(r, max);
+        let r = this.#next(31);
+        let m = max - 1;
+        if ((max & m) === 0)
+            r = Long.fromNumber(r).mul(max).shr(31).toNumber();
+        else {
+            for (let u = r;
+                u - (r = u % max) + m < 0;
+                u = this.#next(31))
+                ;
+        }
+        return r;
     }
 
     #nextInt2(min, max) {
         if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
             return `stlsBetterRandom.warnings.intRange`;
 
+        let r = this.#nextInt0();
         const n = max - min;
-        const r = this.#nextInt0();
-        return (n & (n - 1)) === 0 ? (r & (n - 1)) + min : this.#nextIntBounded(r, n) + min;
-    }
-
-    #nextIntBounded(r, bound) {
-        let u = r >>> 1;
-        while (u + bound - (r = u % bound) < 0)
-            u = this.#nextInt0() >>> 1;
+        const m = n - 1;
+        if ((n & m) === 0) {
+            r = (r & m) + min;
+        } else {
+            let u;
+            do {
+                r = this.#nextInt0();
+                u = r >>> 1;
+                r = u % n;
+            } while (u + m - r < 0);
+            r += min;
+        }
         return r;
     }
 
@@ -146,7 +160,7 @@ class stlsLCGRandom extends stlsRandom {
     }
 
     #nextFloat0() {
-        return (Long.fromNumber(this.#next(26)).shl(27).add(this.#next(27)).toNumber() * stlsLCGRandom.#FLOAT_UNIT);
+        return Long.fromNumber(this.#next(26)).shl(27).add(this.#next(27)).toNumber() * stlsLCGRandom.#FLOAT_UNIT;
     }
 
     #nextFloat1(max) {
