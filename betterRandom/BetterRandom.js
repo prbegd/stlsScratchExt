@@ -1494,7 +1494,7 @@
         }
     }
     //#endregion
-    
+
     const { ArgumentType, BlockType, TargetType, Cast, translate, extensions, runtime } = _Scratch;
     translate.setup({
         "zh-cn": {
@@ -1559,7 +1559,10 @@
             "stlsBetterRandom.warnings.floatRange": "Error: min must be less than max and both must be finite numbers!"
         }
     });
-    
+    function i18n(key) {
+        return translate({id: key});
+    }
+
     // -------------------
     /**
      * 抽象类，用于生成随机数
@@ -1877,7 +1880,7 @@
         getInfo() {
             return {
                 id: stlsBetterRandomID,
-                name: translate({id: "stlsBetterRandom.name"}),
+                name: i18n("stlsBetterRandom.name"),
                 blockIconURI: stlsBetterRandomIcon,
                 menuIconURI: stlsBetterRandomIcon,
                 color1: "#8E44AD",
@@ -1886,7 +1889,7 @@
                     {
                         opcode: "create",
                         blockType: "command",
-                        text: translate({id: "stlsBetterRandom.create"}),
+                        text: i18n("stlsBetterRandom.create"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -1905,7 +1908,7 @@
                     {
                         opcode: "createWithoutSeed",
                         blockType: "command",
-                        text: translate({id: "stlsBetterRandom.createWithoutSeed"}),
+                        text: i18n("stlsBetterRandom.createWithoutSeed"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -1920,7 +1923,7 @@
                     {
                         opcode: "delete",
                         blockType: "command",
-                        text: translate({id: "stlsBetterRandom.delete"}),
+                        text: i18n("stlsBetterRandom.delete"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -1931,12 +1934,12 @@
                     {
                         opcode: "deleteAll",
                         blockType: "command",
-                        text: translate({id: "stlsBetterRandom.deleteAll"})
+                        text: i18n("stlsBetterRandom.deleteAll")
                     },
                     {
                         opcode: "setSeed",
                         blockType: "command",
-                        text: translate({id: "stlsBetterRandom.setSeed"}),
+                        text: i18n("stlsBetterRandom.setSeed"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -1951,7 +1954,7 @@
                     {
                         opcode: "nextInt",
                         blockType: "reporter",
-                        text: translate({id: "stlsBetterRandom.nextInt"}),
+                        text: i18n("stlsBetterRandom.nextInt"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -1962,7 +1965,7 @@
                     {
                         opcode: "nextIntBound",
                         blockType: "reporter",
-                        text: translate({id: "stlsBetterRandom.nextIntBound"}),
+                        text: i18n("stlsBetterRandom.nextIntBound"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -1977,7 +1980,7 @@
                     {
                         opcode: "nextIntRange",
                         blockType: "reporter",
-                        text: translate({id: "stlsBetterRandom.nextIntRange"}),
+                        text: i18n("stlsBetterRandom.nextIntRange"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -1997,7 +2000,7 @@
                     {
                         opcode: "nextFloat",
                         blockType: "reporter",
-                        text: translate({id: "stlsBetterRandom.nextFloat"}),
+                        text: i18n("stlsBetterRandom.nextFloat"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -2008,7 +2011,7 @@
                     {
                         opcode: "nextFloatBound",
                         blockType: "reporter",
-                        text: translate({id: "stlsBetterRandom.nextFloatBound"}),
+                        text: i18n("stlsBetterRandom.nextFloatBound"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -2023,7 +2026,7 @@
                     {
                         opcode: "nextFloatRange",
                         blockType: "reporter",
-                        text: translate({id: "stlsBetterRandom.nextFloatRange"}),
+                        text: i18n("stlsBetterRandom.nextFloatRange"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -2042,7 +2045,7 @@
                     {
                         opcode: "nextBoolean",
                         blockType: "Boolean",
-                        text: translate({id: "stlsBetterRandom.nextBoolean"}),
+                        text: i18n("stlsBetterRandom.nextBoolean"),
                         arguments: {
                             name: {
                                 type: "string",
@@ -2054,11 +2057,11 @@
                 menus: {
                     algorithms: [
                         {
-                            text: translate({id: "stlsBetterRandom.algorithms.LCG"}),
+                            text: i18n("stlsBetterRandom.algorithms.LCG"),
                             value: "LCG"
                         },
                         {
-                            text: translate({id: "stlsBetterRandom.algorithms.MersenneTwister"}),
+                            text: i18n("stlsBetterRandom.algorithms.MersenneTwister"),
                             value: "MersenneTwister"
                         },
                         {
@@ -2075,7 +2078,7 @@
         }
         _returnValue(value) {
             if (typeof value === "string") {
-                return translate({id: value});
+                return i18n(value);
             } else {
                 return value;
             }
@@ -2095,14 +2098,14 @@
                         generator = new stlsXorshiftRandom(seed);
                         break;
                     default:
-                        console.warn(translate({id: "stlsBetterRandom.console.invalidAlgorithm"}) + "(" + args.algorithm + ")");
+                        console.warn(i18n("stlsBetterRandom.console.invalidAlgorithm") + "(" + args.algorithm + ")");
                         return;
                 }
                 this.randomGenerators.set(args.name, generator);
             } catch (e) {
                 if (e.name !== "stlsInvaildSeedException")
                     throw e;
-                console.warn(translate({id: "stlsBetterRandom.console.seedMustBeInteger"}) + seed);
+                console.warn(i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
             }
         }
         createWithoutSeed(args) {
@@ -2118,7 +2121,7 @@
                     generator = new stlsXorshiftRandom();
                     break;
                 default:
-                    console.warn(translate({id: "stlsBetterRandom.console.invalidAlgorithm"}) + "(" + args.algorithm + ")");
+                    console.warn(i18n("stlsBetterRandom.console.invalidAlgorithm") + "(" + args.algorithm + ")");
                     return;
             }
             this.randomGenerators.set(args.name, generator);
@@ -2136,12 +2139,12 @@
                 if (generator) {
                     generator.setSeed(seed);
                 } else {
-                    console.warn(translate({id: "stlsBetterRandom.warnings.generatorNotFound"}));
+                    console.warn(i18n("stlsBetterRandom.warnings.generatorNotFound"));
                 }
             } catch (e) {
                 if (e.name !== "stlsInvaildSeedException")
                     throw e;
-                console.warn(translate({id: "stlsBetterRandom.console.seedMustBeInteger"}) + seed);
+                console.warn(i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
             }
         }
         nextInt(args) {
@@ -2149,7 +2152,7 @@
             if (generator) {
                 return this._returnValue(generator.nextInt());
             } else {
-                return translate({id: "stlsBetterRandom.warnings.generatorNotFound"});
+                return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
         }
         nextIntBound(args) {
@@ -2157,7 +2160,7 @@
             if (generator) {
                 return this._returnValue(generator.nextInt(args.max));
             } else {
-                return translate({id: "stlsBetterRandom.warnings.generatorNotFound"});
+                return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
         }
         nextIntRange(args) {
@@ -2165,7 +2168,7 @@
             if (generator) {
                 return this._returnValue(generator.nextInt(args.min, args.max));
             } else {
-                return translate({id: "stlsBetterRandom.warnings.generatorNotFound"});
+                return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
         }
         nextFloat(args) {
@@ -2173,7 +2176,7 @@
             if (generator) {
                 return this._returnValue(generator.nextFloat());
             } else {
-                return translate({id: "stlsBetterRandom.warnings.generatorNotFound"});
+                return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
         }
         nextFloatBound(args) {
@@ -2181,7 +2184,7 @@
             if (generator) {
                 return this._returnValue(generator.nextFloat(args.max));
             } else {
-                return translate({id: "stlsBetterRandom.warnings.generatorNotFound"});
+                return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
         }
         nextFloatRange(args) {
@@ -2189,7 +2192,7 @@
             if (generator) {
                 return this._returnValue(generator.nextFloat(args.min, args.max));
             } else {
-                return translate({id: "stlsBetterRandom.warnings.generatorNotFound"});
+                return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
         }
         nextBoolean(args) {
@@ -2197,7 +2200,7 @@
             if (generator) {
                 return this._returnValue(generator.nextBoolean());
             } else {
-                return translate({id: "stlsBetterRandom.warnings.generatorNotFound"});
+                return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
         }
     }
