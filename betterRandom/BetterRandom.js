@@ -1487,12 +1487,6 @@
                 return num - Number.EPSILON;
         }
     }
-    class stlsInvaildSeedException extends Error {
-        constructor(message) {
-            super(message);
-            this.name = "stlsInvaildSeedException";
-        }
-    }
     //#endregion
 
     const { ArgumentType, BlockType, TargetType, Cast, translate, extensions, runtime } = _Scratch;
@@ -1560,7 +1554,7 @@
         }
     });
     function i18n(key) {
-        return translate({id: key});
+        return translate({ id: key });
     }
 
     // -------------------
@@ -1631,7 +1625,10 @@
         }
 
         setSeed(seed) {
-            if (!Number.isInteger(seed)) throw new stlsInvaildSeedException();
+            if (!Number.isInteger(seed)) {
+                console.warn(i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
+                return;
+            }
             this.seed = stlsLCGRandom.#initialScramble(seed);
         }
 
@@ -1655,7 +1652,7 @@
 
         #nextInt1(max) {
             if (!Number.isInteger(max) || max <= 0)
-                return `stlsBetterRandom.warnings.intBound`;
+                return i18n(`stlsBetterRandom.warnings.intBound`);
 
             let r = this.#next(31);
             let m = max - 1;
@@ -1672,7 +1669,7 @@
 
         #nextInt2(min, max) {
             if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
-                return `stlsBetterRandom.warnings.intRange`;
+                return i18n(`stlsBetterRandom.warnings.intRange`);
 
             let r = this.#nextInt0();
             const n = max - min;
@@ -1704,7 +1701,7 @@
 
         #nextFloat1(max) {
             if (!(0 < max && max < Number.POSITIVE_INFINITY))
-                return `stlsBetterRandom.warnings.floatBound`;
+                return i18n(`stlsBetterRandom.warnings.floatBound`);
 
             let r = this.#nextFloat0() * max;
             return r >= max ? nextDown(max) : r;
@@ -1712,7 +1709,7 @@
 
         #nextFloat2(min, max) {
             if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY))
-                return `stlsBetterRandom.warnings.floatRange`;
+                return i18n(`stlsBetterRandom.warnings.floatRange`);
 
             const range = max - min;
             let r = this.#nextFloat0() * range + min;
@@ -1738,7 +1735,10 @@
         }
 
         setSeed(seed) {
-            if (!Number.isInteger(seed)) throw new stlsInvaildSeedException();
+            if (!Number.isInteger(seed)) {
+                console.warn(i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
+                return;
+            }
             this.mt[0] = (seed || Date.now()) >>> 0;
             for (this.index = 1; this.index < stlsMersenneTwisterRandom.#N; this.index++) {
                 const s = this.mt[this.index - 1] ^ (this.mt[this.index - 1] >>> 30);
@@ -1779,11 +1779,11 @@
                 }
                 // 注意: 此处的min代表max
                 if (!Number.isInteger(min) || min <= 0)
-                    return `stlsBetterRandom.warnings.intBound`;
+                    return i18n(`stlsBetterRandom.warnings.intBound`);
                 return this.#next() % min; // 返回 [0, max) 范围内的整数
             }
             if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
-                return `stlsBetterRandom.warnings.intRange`;
+                return i18n(`stlsBetterRandom.warnings.intRange`);
             return min + (this.#next() % (max - min)); // 返回 [min, max) 范围内的整数
         }
 
@@ -1794,11 +1794,11 @@
                 }
                 // 注意: 此处的min代表max
                 if (!(0 < min && min < Number.POSITIVE_INFINITY))
-                    return `stlsBetterRandom.warnings.floatBound`;
+                    return i18n(`stlsBetterRandom.warnings.floatBound`);
                 return this.#next() * (1.0 / 4294967296.0) * min; // 返回 [0, max) 范围内的浮点数
             }
             if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY))
-                return `stlsBetterRandom.warnings.floatRange`;
+                return i18n(`stlsBetterRandom.warnings.floatRange`);
             return min + (this.#next() * (1.0 / 4294967296.0) * (max - min)); // 返回 [min, max) 范围内的浮点数
         }
 
@@ -1814,7 +1814,10 @@
         }
         // 设置种子的方法
         setSeed(seed) {
-            if (!Number.isInteger(seed)) throw new stlsInvaildSeedException();
+            if (!Number.isInteger(seed)) {
+                console.warn(i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
+                return;
+            }
             this.seed = seed;
         }
 
@@ -1833,12 +1836,12 @@
             // 如果max未传入, 则返回[0, min)的随机整数
             if (max === undefined) {
                 if (!Number.isInteger(min) || min <= 0)
-                    return `stlsBetterRandom.warnings.intBound`;
+                    return i18n(`stlsBetterRandom.warnings.intBound`);
                 return this.#next() % min; // 处理负值情况
             }
             // 返回[min, max) 的随机整数，确保返回值在正确范围内
             if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max)
-                return `stlsBetterRandom.warnings.intRange`;
+                return i18n(`stlsBetterRandom.warnings.intRange`);
             const range = max - min;
             return min + this.#next() % range;
         }
@@ -1852,12 +1855,12 @@
                 }
                 // 只传入min，将min当做最大值，返回[0, min)的随机浮点数
                 if (!(0 < min && min < Number.POSITIVE_INFINITY))
-                    return `stlsBetterRandom.warnings.floatBound`;
+                    return i18n(`stlsBetterRandom.warnings.floatBound`);
                 return min * randomFloat;
             }
             // 根据 min 和 max 调整范围
             if (!(Number.NEGATIVE_INFINITY < min && min < max && max < Number.POSITIVE_INFINITY))
-                return `stlsBetterRandom.warnings.floatRange`;
+                return i18n(`stlsBetterRandom.warnings.floatRange`);
             return min + randomFloat * (max - min);
         }
 
@@ -2076,37 +2079,24 @@
                 }
             };
         }
-        _returnValue(value) {
-            if (typeof value === "string") {
-                return i18n(value);
-            } else {
-                return value;
-            }
-        }
         create(args) {
             let seed = args.seed;
-            try {
-                let generator;
-                switch (args.algorithm) {
-                    case "LCG":
-                        generator = new stlsLCGRandom(seed);
-                        break;
-                    case "MersenneTwister":
-                        generator = new stlsMersenneTwisterRandom(seed);
-                        break;
-                    case "Xorshift":
-                        generator = new stlsXorshiftRandom(seed);
-                        break;
-                    default:
-                        console.warn(i18n("stlsBetterRandom.console.invalidAlgorithm") + "(" + args.algorithm + ")");
-                        return;
-                }
-                this.randomGenerators.set(args.name, generator);
-            } catch (e) {
-                if (e.name !== "stlsInvaildSeedException")
-                    throw e;
-                console.warn(i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
+            let generator;
+            switch (args.algorithm) {
+                case "LCG":
+                    generator = new stlsLCGRandom(seed);
+                    break;
+                case "MersenneTwister":
+                    generator = new stlsMersenneTwisterRandom(seed);
+                    break;
+                case "Xorshift":
+                    generator = new stlsXorshiftRandom(seed);
+                    break;
+                default:
+                    console.warn(i18n("stlsBetterRandom.console.invalidAlgorithm") + "(" + args.algorithm + ")");
+                    return;
             }
+            this.randomGenerators.set(args.name, generator);
         }
         createWithoutSeed(args) {
             let generator;
@@ -2134,23 +2124,17 @@
         }
         setSeed(args) {
             let seed = args.seed;
-            try {
-                let generator = this.randomGenerators.get(args.name);
-                if (generator) {
-                    generator.setSeed(seed);
-                } else {
-                    console.warn(i18n("stlsBetterRandom.warnings.generatorNotFound"));
-                }
-            } catch (e) {
-                if (e.name !== "stlsInvaildSeedException")
-                    throw e;
-                console.warn(i18n("stlsBetterRandom.console.seedMustBeInteger") + seed);
+            let generator = this.randomGenerators.get(args.name);
+            if (generator) {
+                generator.setSeed(seed);
+            } else {
+                console.warn(i18n("stlsBetterRandom.warnings.generatorNotFound"));
             }
         }
         nextInt(args) {
             let generator = this.randomGenerators.get(args.name);
             if (generator) {
-                return this._returnValue(generator.nextInt());
+                return generator.nextInt();
             } else {
                 return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
@@ -2158,7 +2142,7 @@
         nextIntBound(args) {
             let generator = this.randomGenerators.get(args.name);
             if (generator) {
-                return this._returnValue(generator.nextInt(args.max));
+                return generator.nextInt(args.max);
             } else {
                 return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
@@ -2166,7 +2150,7 @@
         nextIntRange(args) {
             let generator = this.randomGenerators.get(args.name);
             if (generator) {
-                return this._returnValue(generator.nextInt(args.min, args.max));
+                return generator.nextInt(args.min, args.max);
             } else {
                 return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
@@ -2174,7 +2158,7 @@
         nextFloat(args) {
             let generator = this.randomGenerators.get(args.name);
             if (generator) {
-                return this._returnValue(generator.nextFloat());
+                return generator.nextFloat();
             } else {
                 return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
@@ -2182,7 +2166,7 @@
         nextFloatBound(args) {
             let generator = this.randomGenerators.get(args.name);
             if (generator) {
-                return this._returnValue(generator.nextFloat(args.max));
+                return generator.nextFloat(args.max);
             } else {
                 return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
@@ -2190,7 +2174,7 @@
         nextFloatRange(args) {
             let generator = this.randomGenerators.get(args.name);
             if (generator) {
-                return this._returnValue(generator.nextFloat(args.min, args.max));
+                return generator.nextFloat(args.min, args.max);
             } else {
                 return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
@@ -2198,7 +2182,7 @@
         nextBoolean(args) {
             let generator = this.randomGenerators.get(args.name);
             if (generator) {
-                return this._returnValue(generator.nextBoolean());
+                return generator.nextBoolean();
             } else {
                 return i18n("stlsBetterRandom.warnings.generatorNotFound");
             }
