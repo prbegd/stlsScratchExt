@@ -14,7 +14,7 @@ const strictPlugin = {
                 const text = file.text.replace(/\(\(\) ?=> ?{/, "(()=>{'use strict';");
                 console.info("已添加'use strict';");
 
-                const outputPath = path.resolve(process.cwd(), "../build/BetterRandom.js"); // 根据实际路径调整
+                const outputPath = path.resolve(process.cwd(), "../../build/BetterRandom.js"); // 根据实际路径调整
                 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
                 fs.writeFileSync(outputPath, text);
                 console.info("已写入文件。");
@@ -26,7 +26,7 @@ const strictPlugin = {
 esbuild.build({
     entryPoints: ["./BetterRandom.ts"],
     bundle: true,
-    outfile: "../build/BetterRandom.js",
+    outfile: "../../build/BetterRandom.js",
     format: "iife",
     minify: true,
     charset: "utf8",

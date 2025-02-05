@@ -9,7 +9,7 @@
                 "build.cjs",
             ],
             "options": {
-                "cwd": "${workspaceFolder}/betterRandom"
+                "cwd": "${workspaceFolder}/src/betterRandom"
             },
             "group": "build",
         }
