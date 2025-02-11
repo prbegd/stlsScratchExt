@@ -12,6 +12,18 @@
                 "cwd": "${workspaceFolder}/src/betterRandom"
             },
             "group": "build",
+        },
+        {
+            "label": "Build DeviceInfo",
+            "type": "shell",
+            "command": "node",
+            "args": [
+                "build.cjs",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/src/DeviceInfo"
+            },
+            "group": "build",
         }
     ]
 }

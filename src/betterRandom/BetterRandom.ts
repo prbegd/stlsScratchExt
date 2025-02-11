@@ -904,9 +904,6 @@ class stlsBetterRandom {
     private randomGenerators: Map<string, stlsRandom>;
     constructor(runtime: any) {
         this.runtime = runtime;
-        /**
-         * @type {Map<string, stlsRandom>}
-         */
         this.randomGenerators = new Map();
     }
     getInfo() {
