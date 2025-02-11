@@ -2,9 +2,11 @@ interface Window {
     Scratch: any;
 }
 interface Navigator {
-    getBattery() : Promise<BatteryManager>;
     deviceMemory: number;
 }
 interface BatteryManager {
     level: number;
+}
+interface Performance {
+    memory: { jsHeapSizeLimit: number, totalJSHeapSize: number, usedJSHeapSize: number }
 }

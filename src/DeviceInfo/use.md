@@ -1,0 +1,1 @@
+[Click me](https://assets.ccw.site/extension/stlsDeviceInfo)
